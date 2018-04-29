@@ -1,0 +1,39 @@
+====== Fe (78.7) into Layer 1                   =======
+        SRIM-2013.00
+=======================================
+      Data  of  TRIM  Calculation      
+=======================================
+--------------------------------------------------------------------
+    Recoil/Damage Calculations made with Kinchin-Pease Estimates    
+--------------------------------------------------------------------
+Ion = Fe (26)   Ion Mass= 055.9350
+Energy  = 7870000.E-05 keV
+Ion Angle to Surface = 0 degrees
+============= TARGET MATERIAL ======================================
+  Layer # 1 - Layer 1
+  Layer # 1 - Bottom Depth=     8.E+02 A
+  Layer # 1- Density = 8.481E22 atoms/cm3 = 7.865 g/cm3
+  Layer # 1- Fe = 100  Atomic Percent = 100  Mass Percent
+====================================================================
+Target energies for target atom = Fe
+    Displacement = 40 eV, Binding = 3 eV, Surface = 4.34 eV
+====================================================================
+Depth Range of Tabulated Data=  000000.E+00  -  800000.E-03  Angstroms
+====================================================================
+Total Ions calculated =  100000
+Average Range         =   27684.E-02 Angstroms
+Average Straggling    =   13308.E-02 Angstroms
+Average Vacancy/Ion   =   52948.E-02
+====================================================================
+Total Backscattered Ions=  390 
+Total Transmitted Ions  =  29 
+====================================================================
+See files SRIM Outputs\*.txt for tables :
+   TDATA.txt    -- Details of the calculation.
+   RANGE.txt    -- Final distribution of Ions/Recoils
+   VACANCY.txt  -- Distribution of Vacancies
+   IONIZ.txt    -- Distribution of Ionization
+   PHONON.txt   -- Distribution of Phonons
+   E2RECOIL.txt -- Energy transferred to recoils
+   NOVAC.txt    -- Replacement collisions
+   LATERAL.txt  -- Lateral Spread of Ions
