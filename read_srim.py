@@ -38,6 +38,52 @@ class SRIMTable (object):
                         found_headers = True
 
 
+class StoppingTable(SRIMTable):
+    def __init__(self, filename):
+        header_keywords = ['Energy', 'Elec', 'Nuclear', 'Range', 'Straggling']
+        column_names = ['energy', 'energy_units', 'electronic_stopping', 'nuclear_stopping', 'range', 'range_units',
+                        'longitudinal_straggling', 'longitudinal_straggling_units',
+                        'lateral_straggling', 'lateral_straggling_units']
+        super(StoppingTable, self).__init__(filename, header_keywords, column_names)
+
+        # convert all values to either Angstroms or eV
+        def convert_to_eV(row):
+            value = row[0]
+            unit = row[1]
+
+            if unit == 'keV':
+                return value*1.0e3
+            elif unit == 'MeV':
+                return value*1.0e6
+            else:
+                return value
+
+        def convert_to_Ang(row):
+            value = row[0]
+            unit = row[1]
+
+            if unit == 'um':
+                return value*1.0e4
+            elif unit == 'mm':
+                return value*1.0e7
+            else:
+                return value
+
+        # loop over columns that have 'units' in name
+        for unit_column in [col for col in self.raw_df.columns if 'unit' in col]:
+            value_column = self.raw_df.columns[self.raw_df.columns.get_loc(unit_column) - 1]  # get preceding column
+
+            # convert columns
+            self.raw_df[value_column] = self.raw_df[[value_column, unit_column]].apply(convert_to_eV, axis=1)
+            self.raw_df[value_column] = self.raw_df[[value_column, unit_column]].apply(convert_to_Ang, axis=1)
+
+            # drop unit columns
+            self.raw_df.drop(labels=unit_column, axis=1, inplace=True)
+
+        # set range as dataframe index
+        self.raw_df.set_index('energy', inplace=True)
+
+
 class RangeTable(SRIMTable):
     def __init__(self, filename):
         header_keywords = ['DEPTH', 'Fe', 'Recoil']
@@ -80,11 +126,13 @@ if __name__ == "__main__":
     # read in srim file
     damage_table = DamageTable(os.path.join('data', '78.7keV Fe in Fe KP 40eV', 'VACANCY.txt'))
     range_table = RangeTable(os.path.join('data', '78.7keV Fe in Fe KP 40eV', 'RANGE.txt'))
+    stopping_table = StoppingTable(os.path.join('data', 'Iron in Iron.txt'))
 
     # plot it up
-    fig, ax = plt.subplots(ncols=2, figsize=(16, 9))
+    fig, ax = plt.subplots(ncols=3, figsize=(12, 4))
     damage_table.get_srim_table().plot(drawstyle='steps-post', ax=ax[0])
     range_table.get_srim_table().plot(drawstyle='steps-post', ax=ax[1])
+    stopping_table.get_srim_table().plot(loglog=True, ax=ax[2])
 
     fig.tight_layout()
     plt.show()
