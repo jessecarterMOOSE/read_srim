@@ -38,14 +38,26 @@ class SRIMTable (object):
                         found_headers = True
 
 
+class RangeTable(SRIMTable):
+    def __init__(self, filename):
+        header_keywords = ['DEPTH', 'Fe', 'Recoil']
+        column_names = ['depth', 'ions', 'recoils']
+        super(RangeTable, self).__init__(filename, header_keywords, column_names)
+
+        # set range as dataframe index
+        self.raw_df.set_index('depth', inplace=True)
+
+
 class DamageTable(SRIMTable):
     def __init__(self, filename):
         header_keywords = ['TARGET', 'VACANCIES', 'VACANCIES']
         column_names = ['depth', 'vacancies_by_ions', 'vacancies_by_recoils']
         super(DamageTable, self).__init__(filename, header_keywords, column_names)
 
-        # add up columns and make a column of total
+        # set range as dataframe index
         self.raw_df.set_index('depth', inplace=True)
+
+        # add up columns and make a column of total
         self.raw_df['total_vacancies'] = self.raw_df.sum(axis=1)
 
         # find area under each curve
@@ -67,12 +79,12 @@ if __name__ == "__main__":
 
     # read in srim file
     damage_table = DamageTable(os.path.join('data', '78.7keV Fe in Fe KP 40eV', 'VACANCY.txt'))
-    print 'raw table:', damage_table.get_srim_table()
-    print 'total vacancies/ion:', damage_table.get_total_damage()
+    range_table = RangeTable(os.path.join('data', '78.7keV Fe in Fe KP 40eV', 'RANGE.txt'))
 
     # plot it up
-    fig, ax = plt.subplots()
-    damage_table.get_srim_table().plot(drawstyle='steps-post', ax=ax)
+    fig, ax = plt.subplots(ncols=2, figsize=(16, 9))
+    damage_table.get_srim_table().plot(drawstyle='steps-post', ax=ax[0])
+    range_table.get_srim_table().plot(drawstyle='steps-post', ax=ax[1])
 
     fig.tight_layout()
     plt.show()
