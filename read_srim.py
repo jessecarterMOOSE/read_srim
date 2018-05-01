@@ -87,6 +87,11 @@ class StoppingTable(SRIMTable):
         # set range as dataframe index
         self.raw_df.set_index('energy', inplace=True)
 
+        # add a row of zeros at zero energy any if not there already
+        if not self.raw_df.index.isin([0.0]).any():
+            self.raw_df.loc[0.0] = 0.0
+            self.raw_df.sort_index(inplace=True)  # sort it to put zeros on top
+
 
 class RangeTable(SRIMTable):
     def __init__(self, filename):
