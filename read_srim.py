@@ -4,14 +4,17 @@ import numpy as np
 
 
 class SRIMTable (object):
-    def __init__(self, filename, header_keywords, column_names):
+    def __init__(self, filename, header_keywords, column_names, widths=None):
         # generate file-like object to pass to pandas
         file_io = StringIO()
         for line in self.parse_srim_file(filename, header_keywords):
             file_io.write(line)
         file_io.seek(0)  # rewind
 
-        self.raw_df = pd.read_csv(file_io, delim_whitespace=True, header=None, names=column_names)
+        if widths:
+            self.raw_df = pd.read_fwf(file_io, widths=widths, header=None, names=column_names).fillna(value=0.0)
+        else:
+            self.raw_df = pd.read_csv(file_io, delim_whitespace=True, header=None, names=column_names)
 
     def get_srim_table(self):
         return self.raw_df
@@ -25,10 +28,10 @@ class SRIMTable (object):
                 if yielded and len(line.strip()) > 0 and not line.lstrip()[0].isdigit():
                     break
                 elif yielded and len(line.strip()) > 0 and line.lstrip()[0].isdigit():
-                    yield line.lstrip()
+                    yield line
                 elif found_headers and len(line.strip()) > 0 and line.lstrip()[0].isdigit():
                     yielded = True
-                    yield line.lstrip()
+                    yield line
                 num_headers_found = 0
                 if not found_headers:
                     for header in header_keywords:
@@ -44,7 +47,8 @@ class StoppingTable(SRIMTable):
         column_names = ['energy', 'energy_units', 'electronic_stopping', 'nuclear_stopping', 'range', 'range_units',
                         'longitudinal_straggling', 'longitudinal_straggling_units',
                         'lateral_straggling', 'lateral_straggling_units']
-        super(StoppingTable, self).__init__(filename, header_keywords, column_names)
+        widths = [7, 4, 13, 11, 8, 3, 9, 3, 9, 3]
+        super(StoppingTable, self).__init__(filename, header_keywords, column_names, widths)
 
         # convert all values to either Angstroms or eV
         def convert_to_eV(row):
