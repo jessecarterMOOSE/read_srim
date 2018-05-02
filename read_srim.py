@@ -95,7 +95,7 @@ class StoppingTable(SRIMTable):
 
 class RangeTable(SRIMTable):
     def __init__(self, filename):
-        header_keywords = ['DEPTH', 'Fe', 'Recoil']
+        header_keywords = ['DEPTH', 'Recoil']
         column_names = ['depth', 'ions', 'recoils']
         super(RangeTable, self).__init__(filename, header_keywords, column_names)
 
