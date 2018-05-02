@@ -132,16 +132,23 @@ if __name__ == "__main__":
     import os.path
     import matplotlib.pyplot as plt
 
+    ion_energy = 2e6  # 2 MeV
+
     # read in srim file
-    damage_table = DamageTable(os.path.join('data', '78.7keV Fe in Fe KP 40eV', 'VACANCY.txt'))
-    range_table = RangeTable(os.path.join('data', '78.7keV Fe in Fe KP 40eV', 'RANGE.txt'))
-    stopping_table = StoppingTable(os.path.join('data', 'Iron in Iron.txt'))
+    damage_table = DamageTable(os.path.join('data', '2MeV H in Fe KP 40eV', 'VACANCY.txt'))
+    range_table = RangeTable(os.path.join('data', '2MeV H in Fe KP 40eV', 'RANGE.txt'))
+    stopping_table = StoppingTable(os.path.join('data', 'Hydrogen in Iron.txt'))
+
+    # print some basic info
+    print 'range for {} MeV ion: {} microns'.format(ion_energy * 1e-6, stopping_table.range_from_energy(ion_energy)*1e-4)
 
     # plot it up
     fig, ax = plt.subplots(ncols=3, figsize=(12, 4))
     damage_table.get_srim_table().plot(drawstyle='steps-post', ax=ax[0])
     range_table.get_srim_table().plot(drawstyle='steps-post', ax=ax[1])
     stopping_table.get_srim_table().plot(loglog=True, ax=ax[2])
+    for axes in ax:
+        axes.legend(fontsize=8)
 
-    fig.tight_layout()
+    fig.tight_layout(w_pad=0)
     plt.show()
