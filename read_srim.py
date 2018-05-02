@@ -1,6 +1,7 @@
 from StringIO import StringIO
 import pandas as pd
 import numpy as np
+from scipy.interpolate import interp1d
 
 
 class SRIMTable (object):
@@ -91,6 +92,39 @@ class StoppingTable(SRIMTable):
         if not self.raw_df.index.isin([0.0]).any():
             self.raw_df.loc[0.0] = 0.0
             self.raw_df.sort_index(inplace=True)  # sort it to put zeros on top
+
+        # make some interp1d objects for quick interpolation later
+        self.range_interp = interp1d(self.raw_df.index.values, self.raw_df['range'])
+        self.nuclear_stopping_interp = interp1d(self.raw_df.index.values, self.raw_df['nuclear_stopping'])
+        self.elec_stopping_interp = interp1d(self.raw_df.index.values, self.raw_df['electronic_stopping'])
+
+        # make a new range series with duplicate entires dropped (due to lack of precision in SRIM output)
+        ranges = self.raw_df['range']
+        ranges = ranges[ranges.diff() > 0.0]
+        ranges.loc[0.0] = 0.0  # put this back in
+        self.ranges = ranges.sort_index()
+
+    def range_from_energy(self, energy):
+        return self.range_interp(energy)
+
+    def nuclear_stopping_from_energy(self, energy):
+        return self.nuclear_stopping_interp(energy)
+
+    def electronic_stopping_from_energy(self, energy):
+        return self.elec_stopping_interp(energy)
+
+    def energy_from_depth(self, depth, initial_energy):
+        # find reference depth, which is the range of the initial ion
+        reference_depth = self.range_from_energy(initial_energy)
+
+        # subtract ranges from reference depth and keep only positive values
+        depths = reference_depth - self.ranges[reference_depth-self.ranges >= 0.0]
+
+        # this gives us depth indexed by energy, so we need to swap it, then sort it
+        energy_vs_depth = pd.Series(depths.index.values, index=depths.values).sort_index()
+
+        # now we can interpolate
+        return interp1d(energy_vs_depth.index.values, energy_vs_depth.values)(depth)
 
 
 class RangeTable(SRIMTable):
