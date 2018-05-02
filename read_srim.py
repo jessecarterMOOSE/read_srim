@@ -127,6 +127,9 @@ class DamageTable(SRIMTable):
     def get_total_damage(self):
         return self.sum_dict['total_vacancies']
 
+    def get_damage_profile(self):
+        return self.raw_df['total_vacancies']
+
 
 if __name__ == "__main__":
     import os.path
