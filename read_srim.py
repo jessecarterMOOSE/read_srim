@@ -202,6 +202,7 @@ if __name__ == "__main__":
     ax2.plot(depth_array, stopping_table.electronic_stopping_from_energy(energy_array), label='electronic stopping')
     ax2.plot(depth_array, stopping_table.nuclear_stopping_from_energy(energy_array), label='nuclear stopping')
     ax2.set_yscale('symlog', linthreshy=1e-3)
+    ax2.set_xlim(right=max(ax[0, 1].get_xlim()))  # line up x-limits to match up with plot above
     # combine legends
     lines, labels = axes.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
