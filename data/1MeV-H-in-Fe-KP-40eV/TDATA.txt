@@ -20,12 +20,12 @@ Target energies for target atom = Fe
 ====================================================================
 Depth Range of Tabulated Data=  000000.E+00  -  200000.E+00  Angstroms
 ====================================================================
-Total Ions calculated =  069859
-Average Range         =   65265.E+00 Angstroms
-Average Straggling    =   27734.E-01 Angstroms
-Average Vacancy/Ion   =   99976.E-04
+Total Ions calculated =  1000000
+Average Range         =   65249.E+00 Angstroms
+Average Straggling    =   28693.E-01 Angstroms
+Average Vacancy/Ion   =   10103.E-03
 ====================================================================
-Total Backscattered Ions=  11 
+Total Backscattered Ions=  161 
 Total Transmitted Ions  =  0 
 ====================================================================
 See files SRIM Outputs\*.txt for tables :
