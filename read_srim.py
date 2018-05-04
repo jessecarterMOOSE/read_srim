@@ -184,12 +184,37 @@ if __name__ == "__main__":
     print 'range for {} MeV ion: {} microns'.format(ion_energy * 1e-6, stopping_table.range_from_energy(ion_energy)*1e-4)
 
     # plot it up
-    fig, ax = plt.subplots(ncols=3, figsize=(12, 4))
-    damage_table.get_srim_table().plot(drawstyle='steps-post', ax=ax[0])
-    range_table.get_srim_table().plot(drawstyle='steps-post', ax=ax[1])
-    stopping_table.get_srim_table().plot(loglog=True, ax=ax[2])
-    for axes in ax:
-        axes.legend(fontsize=8)
+    fig, ax = plt.subplots(ncols=2, nrows=2, figsize=(12, 8))
+    damage_table.get_srim_table().plot(drawstyle='steps-post', ax=ax[0, 0])
+    range_table.get_srim_table().plot(drawstyle='steps-post', ax=ax[0, 1])
+    stopping_table.get_srim_table().plot(loglog=True, ax=ax[1, 0])
 
-    fig.tight_layout(w_pad=0)
+    # do a energy vs. depth plot with stopping powers
+    axes = ax[1, 1]
+    # use more points near end of range
+    ion_range = float(stopping_table.range_from_energy(ion_energy))
+    depth_array = np.linspace(0, 0.9*ion_range, endpoint=False)
+    depth_array = np.append(depth_array, np.linspace(0.9*ion_range, ion_range, num=1000))
+    energy_array = stopping_table.energy_from_depth(depth_array, ion_energy)  # energies correspond to depths
+    axes.plot(depth_array, energy_array, label='ion energy')
+    ax2 = axes.twinx()
+    ax2.plot([], [])  # skip a color
+    ax2.plot(depth_array, stopping_table.electronic_stopping_from_energy(energy_array), label='electronic stopping')
+    ax2.plot(depth_array, stopping_table.nuclear_stopping_from_energy(energy_array), label='nuclear stopping')
+    ax2.set_yscale('symlog', linthreshy=1e-3)
+    # combine legends
+    lines, labels = axes.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax2.legend(lines + lines2, labels + labels2)
+    ax2.set_ylim(bottom=0)
+
+    # make it look nice
+    for axrow in ax:
+        for axes in axrow:
+            axes.set_xlim(left=0)
+            axes.set_ylim(bottom=0)
+            if axes is not ax[1, 1]:
+                axes.legend(fontsize=8)
+
+    fig.tight_layout()
     plt.show()
