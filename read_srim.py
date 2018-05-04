@@ -136,6 +136,10 @@ class RangeTable(SRIMTable):
         # set range as dataframe index
         self.raw_df.set_index('depth', inplace=True)
 
+    def get_ion_range_profile(self):
+        # get just the ion range curve
+        return self.raw_df['ions']
+
 
 class DamageTable(SRIMTable):
     def __init__(self, filename):
@@ -161,7 +165,7 @@ class DamageTable(SRIMTable):
     def get_total_damage(self):
         return self.sum_dict['total_vacancies']
 
-    def get_damage_profile(self):
+    def get_total_damage_profile(self):
         return self.raw_df['total_vacancies']
 
 
