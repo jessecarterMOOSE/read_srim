@@ -176,8 +176,8 @@ if __name__ == "__main__":
     ion_energy = 2e6  # 2 MeV
 
     # read in srim file
-    damage_table = DamageTable(os.path.join('data', '2MeV H in Fe KP 40eV', 'VACANCY.txt'))
-    range_table = RangeTable(os.path.join('data', '2MeV H in Fe KP 40eV', 'RANGE.txt'))
+    damage_table = DamageTable(os.path.join('data', str(int(ion_energy*1e-6))+'MeV-H-in-Fe-KP-40eV', 'VACANCY.txt'))
+    range_table = RangeTable(os.path.join('data', str(int(ion_energy*1e-6))+'MeV-H-in-Fe-KP-40eV', 'RANGE.txt'))
     stopping_table = StoppingTable(os.path.join('data', 'Hydrogen in Iron.txt'))
 
     # print some basic info
@@ -214,7 +214,7 @@ if __name__ == "__main__":
             axes.set_xlim(left=0)
             axes.set_ylim(bottom=0)
             if axes is not ax[1, 1]:
-                axes.legend(fontsize=8)
+                axes.legend(fontsize=8, loc='best')
 
     fig.tight_layout()
     plt.show()
