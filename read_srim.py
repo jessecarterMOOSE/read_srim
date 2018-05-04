@@ -124,7 +124,7 @@ class StoppingTable(SRIMTable):
         energy_vs_depth = pd.Series(depths.index.values, index=depths.values).sort_index()
 
         # now we can interpolate
-        return interp1d(energy_vs_depth.index.values, energy_vs_depth.values)(depth)
+        return interp1d(energy_vs_depth.index.values, energy_vs_depth.values, bounds_error=False, fill_value=(initial_energy, 0.0))(depth)
 
 
 class RangeTable(SRIMTable):
