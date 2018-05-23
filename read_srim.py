@@ -120,6 +120,10 @@ class StoppingTable(SRIMTable):
         # subtract ranges from reference depth and keep only positive values
         depths = reference_depth - self.ranges[reference_depth-self.ranges >= 0.0]
 
+        # insert initial_energy if it is not already in there, which will be the case if we are interpolating energy
+        if initial_energy not in depths.index:
+            depths[initial_energy] = 0.0  # depth with be zero when ion enters slab
+
         # this gives us depth indexed by energy, so we need to swap it, then sort it
         energy_vs_depth = pd.Series(depths.index.values, index=depths.values).sort_index()
 
