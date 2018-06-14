@@ -173,6 +173,15 @@ class DamageTable(SRIMTable):
         return self.raw_df['total_vacancies']
 
 
+class RecoilTable(SRIMTable):
+    def __init__(self, filename):
+        header_keywords = ['DEPTH', 'from', 'Absorbed']
+        column_names = ['depth', 'energy_from_ions', 'energy_absorbed_by_recoils']
+        super(RecoilTable, self).__init__(filename, header_keywords, column_names)
+
+        # set range as dataframe index
+        self.raw_df.set_index('depth', inplace=True)
+
 if __name__ == "__main__":
     import os.path
     import matplotlib.pyplot as plt
@@ -182,6 +191,7 @@ if __name__ == "__main__":
     # read in srim file
     damage_table = DamageTable(os.path.join('data', str(int(ion_energy*1e-6))+'MeV-H-in-Fe-KP-40eV', 'VACANCY.txt'))
     range_table = RangeTable(os.path.join('data', str(int(ion_energy*1e-6))+'MeV-H-in-Fe-KP-40eV', 'RANGE.txt'))
+    recoil_table = RecoilTable(os.path.join('data', '78.7keV-Fe-in-Fe-KP-40eV', 'E2RECOIL.txt'))
     stopping_table = StoppingTable(os.path.join('data', 'Hydrogen in Iron.txt'))
 
     # print some basic info
