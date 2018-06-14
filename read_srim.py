@@ -4,7 +4,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 
-class SRIMTable (object):
+class SRIMTable(object):
     def __init__(self, filename, header_keywords, column_names, widths=None):
         # generate file-like object to pass to pandas
         file_io = StringIO()
@@ -182,6 +182,28 @@ class RecoilTable(SRIMTable):
         # set range as dataframe index
         self.raw_df.set_index('depth', inplace=True)
 
+
+class CollisionTable(SRIMTable):
+    def __init__(self, filename):
+        column_names = ['ion_number', 'ion_energy', 'x', 'y', 'z', 'elec_stopping', 'target_atom', 'recoil_energy', 'displacements']
+        super(CollisionTable, self).__init__(filename, None, column_names)
+
+    def parse_srim_file(self, filename, header_keywords):
+        with open(filename, 'r') as f:
+            for line in f:
+                # lines of data have weird superscript 3's as delimiter, and also start with one,
+                # so we need to split on that character but also remove empty fields
+                if '\xb3' in line.strip():
+                    line_split = [item.strip() for item in line.strip().split('\xb3')]
+                    fields = [field for field in line_split if field]
+                    # some lines might not be data lines
+                    if fields[0].isdigit():
+                        # convert ion number to int and ion energy from keV to eV
+                        fields[0] = str(int(fields[0]))
+                        fields[1] = str(float(fields[1])*1e3)
+                        yield ' '.join(map(str, fields))+'\n'
+
+
 if __name__ == "__main__":
     import os.path
     import matplotlib.pyplot as plt
@@ -193,6 +215,7 @@ if __name__ == "__main__":
     range_table = RangeTable(os.path.join('data', str(int(ion_energy*1e-6))+'MeV-H-in-Fe-KP-40eV', 'RANGE.txt'))
     recoil_table = RecoilTable(os.path.join('data', '78.7keV-Fe-in-Fe-KP-40eV', 'E2RECOIL.txt'))
     stopping_table = StoppingTable(os.path.join('data', 'Hydrogen in Iron.txt'))
+    collision_table = CollisionTable(os.path.join('data', str(int(ion_energy * 1e-6)) + 'MeV-H-in-Fe-KP-40eV', 'with-collision-data', 'COLLISON-truncated.txt'))
 
     # print some basic info
     print 'range for {} MeV ion: {} microns'.format(ion_energy * 1e-6, stopping_table.range_from_energy(ion_energy)*1e-4)
