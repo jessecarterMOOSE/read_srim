@@ -130,6 +130,18 @@ class StoppingTable(SRIMTable):
         # now we can interpolate
         return interp1d(energy_vs_depth.index.values, energy_vs_depth.values, bounds_error=False, fill_value=(initial_energy, 0.0))(depth)
 
+    def estimated_damage_from_energy(self, energy, displacement_energy=40.0, ratio=0.5):
+        return (0.8/2.0/displacement_energy)*self.nuclear_stopping_from_energy(energy)*ratio
+
+    def estimated_damage_from_depth(self, depth, initial_energy, displacement_energy=40.0, ratio=0.5):
+        energy = self.energy_from_depth(depth, initial_energy)
+        return self.estimated_damage_from_energy(energy, displacement_energy, ratio)
+
+    def estimated_damage_curve(self, initial_energy, displacement_energy=40.0, ratio=0.5):
+        ion_range = self.range_from_energy(initial_energy)
+        depths = np.linspace(0, ion_range, num=1000)
+        return pd.Series(data=self.estimated_damage_from_depth(depths, initial_energy, displacement_energy, ratio), index=depths)
+
 
 class RangeTable(SRIMTable):
     def __init__(self, filename):
@@ -225,6 +237,7 @@ if __name__ == "__main__":
     damage_table.get_srim_table().plot(drawstyle='steps-post', ax=ax[0, 0])
     range_table.get_srim_table().plot(drawstyle='steps-post', ax=ax[0, 1])
     stopping_table.get_srim_table().plot(loglog=True, ax=ax[1, 0])
+    stopping_table.estimated_damage_curve(ion_energy).plot(ax=ax[0, 0], label='estimated total damage', c='k', ls='--', lw=1, zorder=0)
 
     # do a energy vs. depth plot with stopping powers
     axes = ax[1, 1]
@@ -247,6 +260,7 @@ if __name__ == "__main__":
     ax2.set_ylim(bottom=0)
 
     # make it look nice
+    ax[0, 0].set_ylim([0, damage_table.get_total_damage_profile().max()*1.1])
     for axrow in ax:
         for axes in axrow:
             axes.set_xlim(left=0)
