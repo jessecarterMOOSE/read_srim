@@ -264,33 +264,46 @@ if __name__ == "__main__":
     stopping_table.estimated_damage_curve(ion_energy, trim=True).plot(ax=ax[0, 0], label='estimated total damage', c='k', ls='--', lw=1, zorder=0)
 
     # do a energy vs. depth plot with stopping powers
-    axes = ax[1, 1]
     # use more points near end of range
     ion_range = float(stopping_table.range_from_energy(ion_energy))
     depth_array = np.linspace(0, 0.9*ion_range, endpoint=False)
     depth_array = np.append(depth_array, np.linspace(0.9*ion_range, ion_range, num=1000))
     energy_array = stopping_table.energy_from_depth(depth_array, ion_energy)  # energies correspond to depths
-    axes.plot(depth_array, energy_array, label='ion energy')
-    ax2 = axes.twinx()
+    ax[1, 1].plot(depth_array, energy_array, label='ion energy')
+    ax2 = ax[1, 1].twinx()
     ax2.plot([], [])  # skip a color
     ax2.plot(depth_array, stopping_table.electronic_stopping_from_energy(energy_array), label='electronic stopping')
     ax2.plot(depth_array, stopping_table.nuclear_stopping_from_energy(energy_array), label='nuclear stopping')
     ax2.set_yscale('symlog', linthreshy=1e-3)
     ax2.set_xlim(right=max(ax[0, 1].get_xlim()))  # line up x-limits to match up with plot above
     # combine legends
-    lines, labels = axes.get_legend_handles_labels()
+    lines, labels = ax[1, 1].get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
-    ax2.legend(lines + lines2, labels + labels2)
+    ax2.legend(lines + lines2, labels + labels2, fontsize='smaller', loc='lower right')
     ax2.set_ylim(bottom=0)
 
     # make it look nice
     ax[0, 0].set_ylim([0, damage_table.get_total_damage_profile().max()*1.1])
+    ax[1, 0].set_xlabel('energy (eV)')
     for axrow in ax:
         for axes in axrow:
             axes.set_xlim(left=0)
             axes.set_ylim(bottom=0)
+            fig.canvas.draw()  # set up tick labels
             if axes is not ax[1, 1]:
-                axes.legend(fontsize=8, loc='best')
+                axes.legend(fontsize='smaller', loc='best')
+            if axes is not ax[1, 0]:
+                axes.set_xlabel('depth (microns)')
+                axes.set_xticklabels([int(float(tick.get_text())*1e-4) for tick in axes.get_xticklabels()])
+            if axes is ax[1, 1]:
+                axes.set_ylabel('energy (MeV)')
+                axes.set_yticklabels([float(tick.get_text())*1e-6 for tick in axes.get_yticklabels()])
+
+    # annotate plots
+    display_string = str(int(ion_energy*1e-6))+' MeV H in Fe'
+    ax[0, 0].text(0.9, 0.9, display_string, transform=ax[0, 0].transAxes, horizontalalignment='right', bbox={'lw': 1, 'facecolor': 'white'})
+    ax[1, 1].text(0.9, 0.9, display_string, transform=ax[1, 1].transAxes, horizontalalignment='right', bbox={'lw': 1, 'facecolor': 'white'})
+    ax[0, 1].text(0.1, 0.9, display_string, transform=ax[0, 1].transAxes, horizontalalignment='left', bbox={'lw': 1, 'facecolor': 'white'})
 
     fig.tight_layout()
 
@@ -303,6 +316,7 @@ if __name__ == "__main__":
     straggling = stopping_table.straggling_from_energy(ion_energy)
     depths = np.linspace(0, ion_range)
     energies = stopping_table.energy_from_depth(depths, ion_energy)
+    ax.plot(depths*1e-4, energies*1e-6, 'k--', lw=1)
     ax.plot(depths*(1.0+2.0*straggling/ion_range)*1e-4, energies*1e-6, 'k--', lw=1)  # energy + 2*straggling
     ax.plot(depths*(1.0-2.0*straggling/ion_range)*1e-4, energies*1e-6, 'k--', lw=1)  # energy - 2*straggling
 
@@ -310,5 +324,6 @@ if __name__ == "__main__":
     ax.set_ylabel('ion energy (MeV)')
     ax.set_xlim(left=0)
     ax.set_ylim(bottom=0)
+    ax.text(0.9, 0.9, display_string, transform=ax.transAxes, horizontalalignment='right', bbox={'lw': 1, 'facecolor': 'white'})
 
     plt.show()
