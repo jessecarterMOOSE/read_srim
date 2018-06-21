@@ -110,6 +110,7 @@ class StoppingTable(SingleTarget):
 
         # make some interp1d objects for quick interpolation later
         self.range_interp = interp1d(self.raw_df.index.values, self.raw_df['range'])
+        self.straggling_interp = interp1d(self.raw_df.index.values, self.raw_df['longitudinal_straggling'])
         self.nuclear_stopping_interp = interp1d(self.raw_df.index.values, self.raw_df['nuclear_stopping'])
         self.elec_stopping_interp = interp1d(self.raw_df.index.values, self.raw_df['electronic_stopping'])
 
@@ -121,6 +122,9 @@ class StoppingTable(SingleTarget):
 
     def range_from_energy(self, energy):
         return self.range_interp(energy)
+
+    def straggling_from_energy(self, energy):
+        return self.straggling_interp(energy)
 
     def nuclear_stopping_from_energy(self, energy):
         return self.nuclear_stopping_interp(energy)
@@ -250,7 +254,7 @@ if __name__ == "__main__":
     collision_table = CollisionTable(os.path.join('data', str(int(ion_energy * 1e-6)) + 'MeV-H-in-Fe-KP-40eV', 'with-collision-data', 'COLLISON-truncated.txt'))
 
     # print some basic info
-    print 'range for {} MeV ion: {} microns'.format(ion_energy * 1e-6, stopping_table.range_from_energy(ion_energy)*1e-4)
+    print 'range for {} MeV ion: {} +/- {} microns'.format(ion_energy*1e-6, stopping_table.range_from_energy(ion_energy)*1e-4, stopping_table.straggling_from_energy(ion_energy)*1e-4)
 
     # plot it up
     fig, ax = plt.subplots(ncols=2, nrows=2, figsize=(12, 8))
