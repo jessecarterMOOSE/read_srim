@@ -42,14 +42,26 @@ class SRIMTable(object):
                         found_headers = True
 
 
-class StoppingTable(SRIMTable):
+class SingleTarget(SRIMTable):
+    # class for handling data files with no layer information, e.g. StoppingTable
+    def __init__(self, filename, header_keywords, column_names, widths=None):
+        super(SingleTarget, self).__init__(filename, header_keywords, column_names, widths=widths)
+
+
+class LayeredTarget(SRIMTable):
+    # class for handling data files from SRIM runs where the target can contain many layers
+    def __init__(self, filename, header_keywords, column_names, widths=None):
+        super(LayeredTarget, self).__init__(filename, header_keywords, column_names, widths=widths)
+
+
+class StoppingTable(SingleTarget):
     def __init__(self, filename):
         header_keywords = ['Energy', 'Elec', 'Nuclear', 'Range', 'Straggling']
         column_names = ['energy', 'energy_units', 'electronic_stopping', 'nuclear_stopping', 'range', 'range_units',
                         'longitudinal_straggling', 'longitudinal_straggling_units',
                         'lateral_straggling', 'lateral_straggling_units']
         widths = [7, 4, 13, 11, 8, 3, 9, 3, 9, 3]
-        super(StoppingTable, self).__init__(filename, header_keywords, column_names, widths)
+        super(StoppingTable, self).__init__(filename, header_keywords, column_names, widths=widths)
 
         # convert all values to either Angstroms or eV
         def convert_to_eV(row):
@@ -148,7 +160,7 @@ class StoppingTable(SRIMTable):
         return curve
 
 
-class RangeTable(SRIMTable):
+class RangeTable(LayeredTarget):
     def __init__(self, filename):
         header_keywords = ['DEPTH', 'Recoil']
         column_names = ['depth', 'ions', 'recoils']
@@ -162,7 +174,7 @@ class RangeTable(SRIMTable):
         return self.raw_df['ions']
 
 
-class DamageTable(SRIMTable):
+class DamageTable(LayeredTarget):
     def __init__(self, filename):
         header_keywords = ['TARGET', 'VACANCIES', 'VACANCIES']
         column_names = ['depth', 'vacancies_by_ions', 'vacancies_by_recoils']
@@ -190,7 +202,7 @@ class DamageTable(SRIMTable):
         return self.raw_df['total_vacancies']
 
 
-class RecoilTable(SRIMTable):
+class RecoilTable(LayeredTarget):
     def __init__(self, filename):
         header_keywords = ['DEPTH', 'from', 'Absorbed']
         column_names = ['depth', 'energy_from_ions', 'energy_absorbed_by_recoils']
@@ -200,7 +212,7 @@ class RecoilTable(SRIMTable):
         self.raw_df.set_index('depth', inplace=True)
 
 
-class CollisionTable(SRIMTable):
+class CollisionTable(SingleTarget):
     def __init__(self, filename):
         column_names = ['ion_number', 'ion_energy', 'x', 'y', 'z', 'elec_stopping', 'target_atom', 'recoil_energy', 'displacements']
         super(CollisionTable, self).__init__(filename, None, column_names)
