@@ -137,10 +137,15 @@ class StoppingTable(SRIMTable):
         energy = self.energy_from_depth(depth, initial_energy)
         return self.estimated_damage_from_energy(energy, displacement_energy, ratio)
 
-    def estimated_damage_curve(self, initial_energy, displacement_energy=40.0, ratio=0.5):
+    def estimated_damage_curve(self, initial_energy, displacement_energy=40.0, ratio=0.5, trim=False):
         ion_range = self.range_from_energy(initial_energy)
         depths = np.linspace(0, ion_range, num=1000)
-        return pd.Series(data=self.estimated_damage_from_depth(depths, initial_energy, displacement_energy, ratio), index=depths)
+        curve = pd.Series(data=self.estimated_damage_from_depth(depths, initial_energy, displacement_energy, ratio), index=depths)
+        if trim:
+            # trim past the peak value
+            mask = curve.index < curve.idxmax()
+            curve = curve[mask]
+        return curve
 
 
 class RangeTable(SRIMTable):
@@ -237,7 +242,7 @@ if __name__ == "__main__":
     damage_table.get_srim_table().plot(drawstyle='steps-post', ax=ax[0, 0])
     range_table.get_srim_table().plot(drawstyle='steps-post', ax=ax[0, 1])
     stopping_table.get_srim_table().plot(loglog=True, ax=ax[1, 0])
-    stopping_table.estimated_damage_curve(ion_energy).plot(ax=ax[0, 0], label='estimated total damage', c='k', ls='--', lw=1, zorder=0)
+    stopping_table.estimated_damage_curve(ion_energy, trim=True).plot(ax=ax[0, 0], label='estimated total damage', c='k', ls='--', lw=1, zorder=0)
 
     # do a energy vs. depth plot with stopping powers
     axes = ax[1, 1]
