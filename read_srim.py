@@ -293,4 +293,22 @@ if __name__ == "__main__":
                 axes.legend(fontsize=8, loc='best')
 
     fig.tight_layout()
+
+    # show a plot of energies vs. depth in the collision data
+    fig, ax = plt.subplots()
+    df = collision_table.get_srim_table()
+    ax.scatter(df['x']*1e-4, df['ion_energy']*1e-6, marker='.', s=1)
+
+    # add lines to show straggling
+    straggling = stopping_table.straggling_from_energy(ion_energy)
+    depths = np.linspace(0, ion_range)
+    energies = stopping_table.energy_from_depth(depths, ion_energy)
+    ax.plot(depths*(1.0+2.0*straggling/ion_range)*1e-4, energies*1e-6, 'k--', lw=1)  # energy + 2*straggling
+    ax.plot(depths*(1.0-2.0*straggling/ion_range)*1e-4, energies*1e-6, 'k--', lw=1)  # energy - 2*straggling
+
+    ax.set_xlabel('depth (microns)')
+    ax.set_ylabel('ion energy (MeV)')
+    ax.set_xlim(left=0)
+    ax.set_ylim(bottom=0)
+
     plt.show()
