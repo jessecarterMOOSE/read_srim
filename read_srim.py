@@ -17,6 +17,9 @@ class SRIMTable(object):
         else:
             self.raw_df = pd.read_csv(file_io, delim_whitespace=True, header=None, names=column_names)
 
+        # store filename as a member variable
+        self.filename = filename
+
     def get_srim_table(self):
         return self.raw_df
 
