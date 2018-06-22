@@ -166,6 +166,12 @@ class StoppingTable(SingleTarget):
             curve = curve[mask]
         return curve
 
+    def energy_profile(self, initial_energy, num=1000):
+        ion_range = self.range_from_energy(initial_energy)
+        depths = np.linspace(0, ion_range, num=num)
+        energies = self.energy_from_depth(depths, initial_energy)
+        return pd.Series(data=energies, index=depths)
+
 
 class RangeTable(LayeredTarget):
     def __init__(self, filename):
@@ -314,8 +320,9 @@ if __name__ == "__main__":
 
     # add lines to show straggling
     straggling = stopping_table.straggling_from_energy(ion_energy)
-    depths = np.linspace(0, ion_range)
-    energies = stopping_table.energy_from_depth(depths, ion_energy)
+    energy_profile = stopping_table.energy_profile(ion_energy)
+    depths = energy_profile.index.values
+    energies = energy_profile.values
     ax.plot(depths*1e-4, energies*1e-6, 'k--', lw=1)
     ax.plot(depths*(1.0+2.0*straggling/ion_range)*1e-4, energies*1e-6, 'k--', lw=1)  # energy + 2*straggling
     ax.plot(depths*(1.0-2.0*straggling/ion_range)*1e-4, energies*1e-6, 'k--', lw=1)  # energy - 2*straggling
