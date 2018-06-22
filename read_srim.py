@@ -264,8 +264,8 @@ if __name__ == "__main__":
 
     # plot it up
     fig, ax = plt.subplots(ncols=2, nrows=2, figsize=(12, 8))
-    damage_table.get_srim_table().plot(drawstyle='steps-post', ax=ax[0, 0])
-    range_table.get_srim_table().plot(drawstyle='steps-post', ax=ax[0, 1])
+    damage_table.get_srim_table().plot(drawstyle='steps-pre', ax=ax[0, 0])
+    range_table.get_srim_table().plot(drawstyle='steps-pre', ax=ax[0, 1])
     stopping_table.get_srim_table().plot(loglog=True, ax=ax[1, 0])
     stopping_table.estimated_damage_curve(ion_energy, trim=True).plot(ax=ax[0, 0], label='estimated total damage', c='k', ls='--', lw=1, zorder=0)
 
