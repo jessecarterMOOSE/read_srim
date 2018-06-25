@@ -20,6 +20,9 @@ class SRIMTable(object):
         # store filename as a member variable
         self.filename = filename
 
+        # store target information in a dict member variable
+        self.target_info = self.get_target_info()
+
     def get_srim_table(self):
         return self.raw_df
 
@@ -50,12 +53,17 @@ class SingleTarget(SRIMTable):
     def __init__(self, filename, header_keywords, column_names, widths=None):
         super(SingleTarget, self).__init__(filename, header_keywords, column_names, widths=widths)
 
+    def get_target_info(self):
+        pass
+
 
 class LayeredTarget(SRIMTable):
     # class for handling data files from SRIM runs where the target can contain many layers
     def __init__(self, filename, header_keywords, column_names, widths=None):
         super(LayeredTarget, self).__init__(filename, header_keywords, column_names, widths=widths)
 
+    def get_target_info(self):
+        pass
 
 class StoppingTable(SingleTarget):
     def __init__(self, filename):
