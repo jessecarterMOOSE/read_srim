@@ -316,19 +316,20 @@ if __name__ == "__main__":
     # show a plot of energies vs. depth in the collision data
     fig, ax = plt.subplots()
     df = collision_table.get_srim_table()
-    ax.scatter(df['x']*1e-4, df['ion_energy']*1e-6, marker='.', s=1)
+    ax.scatter(df['x']*1e-4, df['ion_energy']*1e-6, marker='.', s=1, label=None)
 
     # add lines to show straggling
     straggling = stopping_table.straggling_from_energy(ion_energy)
     energy_profile = stopping_table.energy_profile(ion_energy)
     depths = energy_profile.index.values
     energies = energy_profile.values
-    ax.plot(depths*1e-4, energies*1e-6, 'k--', lw=1)
-    ax.plot(depths*(1.0+2.0*straggling/ion_range)*1e-4, energies*1e-6, 'k--', lw=1)  # energy + 2*straggling
-    ax.plot(depths*(1.0-2.0*straggling/ion_range)*1e-4, energies*1e-6, 'k--', lw=1)  # energy - 2*straggling
+    ax.plot(depths*1e-4, energies*1e-6, 'k--', lw=1, label='estimated energy')
+    ax.plot(depths*(1.0+2.0*straggling/ion_range)*1e-4, energies*1e-6, c='grey', dashes=[2, 2], lw=1, label=r'range $\pm 2\sigma$')  # energy + 2*straggling
+    ax.plot(depths*(1.0-2.0*straggling/ion_range)*1e-4, energies*1e-6, c='grey', dashes=[2, 2], lw=1)  # energy - 2*straggling
 
     ax.set_xlabel('depth (microns)')
     ax.set_ylabel('ion energy (MeV)')
+    ax.legend(loc='lower left')
     ax.set_xlim(left=0)
     ax.set_ylim(bottom=0)
     ax.text(0.9, 0.9, display_string, transform=ax.transAxes, horizontalalignment='right', bbox={'lw': 1, 'facecolor': 'white'})
