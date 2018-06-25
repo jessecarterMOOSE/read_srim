@@ -2,6 +2,7 @@ from StringIO import StringIO
 import pandas as pd
 import numpy as np
 from scipy.interpolate import interp1d
+import re
 
 
 class SRIMTable(object):
@@ -63,7 +64,66 @@ class LayeredTarget(SRIMTable):
         super(LayeredTarget, self).__init__(filename, header_keywords, column_names, widths=widths)
 
     def get_target_info(self):
-        pass
+        # read through file and figure out target properties, including multiple layers
+        def fields_past(line, search_string, num_fields, num_to_return=1, return_remaining=False):
+            # takes a string, splits it, and looks for search_string and returns the num fields past that
+            # good for processing data lines where the format is known but not necessary the full line
+            fields = line.split()
+            for i, field in enumerate(fields):
+                if search_string in field:
+                    if return_remaining:
+                        return ' '.join(map(str, fields[i + num_fields:]))
+                    else:
+                        return ' '.join(map(str, fields[i + num_fields:i + num_fields + num_to_return]))
+            return
+
+        with open(self.filename, 'r') as f:
+            out_dict = {}
+            ions = 0.0
+            for rawline in f.readlines():
+                line = rawline.strip()
+
+                # we are done if we found the ions and hit another section break
+                if '========' and ions > 0.0:
+                    # need out finish up last layer
+                    out_dict[layer_name] = {'width': width, 'atom_density': atom_density}
+                    return out_dict
+
+                # look for ion info
+                if re.match('Ion.*Energy', line):
+                    # ion and energy always in the format 'Ion = <element> Energy = <energy> keV'
+                    fields = line.split()
+                    ion = fields[2]
+                    energy = float(fields[-2])
+                    energy *= 1e3  # energy in file is in keV
+                    out_dict['ion'] = ion
+                    out_dict['ion_energy'] = energy
+
+                # look for layer info
+                if line.startswith('Layer'):
+                    fields = line.split()
+                    # check for new layer and start a new dict for this layer
+                    if fields[1].isdigit():
+                        layer_num = int(fields[1])
+                        # but first make a new dict of the old layer
+                        if layer_num > 1:
+                            out_dict[layer_name] = {'width': width, 'atom_density': atom_density}
+                        # get the name of the layer
+                        layer_name = fields_past(line, ':', 1, return_remaining=True)
+                    # check for line width, and density, which sometimes appear on the same line, but sometimes not,
+                    # so can't hardcode field numbers
+                    if 'Width' in line:
+                        # layer width is 2 fields past 'Width'
+                        width = float(fields_past(line, 'Width', 2))
+                    if 'Density' in line:
+                        # layer density is 1 field before units
+                        atom_density = float(fields_past(line, 'atoms/cm3', -1))
+
+                # get total number of ions ran
+                if 'Total Ions calculated' in line:
+                    ions = float(line.split()[-1][1:])  # get rid of equals sign
+                    out_dict['ions'] = ions
+
 
 class StoppingTable(SingleTarget):
     def __init__(self, filename):
@@ -257,6 +317,7 @@ class CollisionTable(SingleTarget):
 if __name__ == "__main__":
     import os.path
     import matplotlib.pyplot as plt
+    from pprint import pprint
 
     ion_energy = 2e6  # 2 MeV
 
@@ -269,6 +330,8 @@ if __name__ == "__main__":
 
     # print some basic info
     print 'range for {} MeV ion: {} +/- {} microns'.format(ion_energy*1e-6, stopping_table.range_from_energy(ion_energy)*1e-4, stopping_table.straggling_from_energy(ion_energy)*1e-4)
+    print 'some information on target from', damage_table.filename
+    pprint(damage_table.target_info)
 
     # plot it up
     fig, ax = plt.subplots(ncols=2, nrows=2, figsize=(12, 8))
