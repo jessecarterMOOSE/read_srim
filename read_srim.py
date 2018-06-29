@@ -293,6 +293,26 @@ class RecoilTable(LayeredTarget):
         self.raw_df.set_index('depth', inplace=True)
 
 
+class IonizationTable(LayeredTarget):
+    def __init__(self, filename):
+        header_keywords = ['TARGET', 'IONIZ.']
+        column_names = ['depth', 'ionization_by_ions', 'ionization_by_recoils']
+        super(IonizationTable, self).__init__(filename, header_keywords, column_names)
+
+        # set range as dataframe index
+        self.raw_df.set_index('depth', inplace=True)
+
+
+class PhononTable(LayeredTarget):
+    def __init__(self, filename):
+        header_keywords = ['DEPTH', 'PHONONS']
+        column_names = ['depth', 'phonons_by_ions', ' phonons_by_recoils']
+        super(PhononTable, self).__init__(filename, header_keywords, column_names)
+
+        # set range as dataframe index
+        self.raw_df.set_index('depth', inplace=True)
+
+
 class CollisionTable(SingleTarget):
     def __init__(self, filename):
         column_names = ['ion_number', 'ion_energy', 'x', 'y', 'z', 'elec_stopping', 'target_atom', 'recoil_energy', 'displacements']
@@ -324,6 +344,8 @@ if __name__ == "__main__":
     # read in srim file
     damage_table = DamageTable(os.path.join('data', str(int(ion_energy*1e-6))+'MeV-H-in-Fe-KP-40eV', 'VACANCY.txt'))
     range_table = RangeTable(os.path.join('data', str(int(ion_energy*1e-6))+'MeV-H-in-Fe-KP-40eV', 'RANGE.txt'))
+    ionization_table = IonizationTable(os.path.join('data', str(int(ion_energy*1e-6))+'MeV-H-in-Fe-KP-40eV', 'IONIZ.txt'))
+    phonon_table = PhononTable(os.path.join('data', str(int(ion_energy*1e-6))+'MeV-H-in-Fe-KP-40eV', 'PHONON.txt'))
     recoil_table = RecoilTable(os.path.join('data', '78.7keV-Fe-in-Fe-KP-40eV', 'E2RECOIL.txt'))
     stopping_table = StoppingTable(os.path.join('data', 'Hydrogen in Iron.txt'))
     collision_table = CollisionTable(os.path.join('data', str(int(ion_energy * 1e-6)) + 'MeV-H-in-Fe-KP-40eV', 'with-collision-data', 'COLLISON.txt'))
