@@ -319,14 +319,14 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     from pprint import pprint
 
-    ion_energy = 2e6  # 2 MeV
+    ion_energy = 3e6  # 3 MeV
 
     # read in srim file
     damage_table = DamageTable(os.path.join('data', str(int(ion_energy*1e-6))+'MeV-H-in-Fe-KP-40eV', 'VACANCY.txt'))
     range_table = RangeTable(os.path.join('data', str(int(ion_energy*1e-6))+'MeV-H-in-Fe-KP-40eV', 'RANGE.txt'))
     recoil_table = RecoilTable(os.path.join('data', '78.7keV-Fe-in-Fe-KP-40eV', 'E2RECOIL.txt'))
     stopping_table = StoppingTable(os.path.join('data', 'Hydrogen in Iron.txt'))
-    collision_table = CollisionTable(os.path.join('data', str(int(ion_energy * 1e-6)) + 'MeV-H-in-Fe-KP-40eV', 'with-collision-data', 'COLLISON-truncated.txt'))
+    collision_table = CollisionTable(os.path.join('data', str(int(ion_energy * 1e-6)) + 'MeV-H-in-Fe-KP-40eV', 'with-collision-data', 'COLLISON.txt'))
 
     # print some basic info
     print 'range for {} MeV ion: {} +/- {} microns'.format(ion_energy*1e-6, stopping_table.range_from_energy(ion_energy)*1e-4, stopping_table.straggling_from_energy(ion_energy)*1e-4)
