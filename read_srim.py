@@ -7,6 +7,12 @@ import re
 
 class SRIMTable(object):
     def __init__(self, filename, header_keywords, column_names, widths=None):
+        # store filename as a member variable
+        self.filename = filename
+
+        # store target information in a dict member variable
+        self.target_info = self.get_target_info()
+
         # generate file-like object to pass to pandas
         file_io = StringIO()
         for line in self.parse_srim_file(filename, header_keywords):
@@ -17,12 +23,6 @@ class SRIMTable(object):
             self.raw_df = pd.read_fwf(file_io, widths=widths, header=None, names=column_names).fillna(value=0.0)
         else:
             self.raw_df = pd.read_csv(file_io, delim_whitespace=True, header=None, names=column_names)
-
-        # store filename as a member variable
-        self.filename = filename
-
-        # store target information in a dict member variable
-        self.target_info = self.get_target_info()
 
     def get_srim_table(self):
         return self.raw_df
