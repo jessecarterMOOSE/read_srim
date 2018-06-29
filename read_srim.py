@@ -240,6 +240,44 @@ class StoppingTable(SingleTarget):
         energies = self.energy_from_depth(depths, initial_energy)
         return pd.Series(data=energies, index=depths)
 
+    def get_target_info(self):
+        # get ready to capture some info
+        out_dict = {}
+        element_list = []
+        atom_fraction_list = []
+        ready_to_acquire_composition = False
+
+        # loop over lines in file
+        with open(self.filename, 'r') as f:
+            for rawline in f.readlines():
+                line = rawline.strip()
+                fields = line.split()
+
+                # we are done if we hit this line and already read in composition
+                if ready_to_acquire_composition and '===============' in line:
+                    # store composition
+                    out_dict['elements'] = element_list
+                    out_dict['atom_fractions'] = atom_fraction_list
+                    return out_dict
+
+                # look for ion info
+                if 'Ion =' in line and 'Mass =' in line:
+                    out_dict['ion'] = fields[2]
+
+                # look for target density
+                if 'Target Density' in line:
+                    out_dict['atom_density'] = float(fields[-2])
+
+                # get composition if ready
+                if ready_to_acquire_composition:
+                    element_list.append(fields[0])
+                    atom_fraction_list.append(float(fields[2])/100.0)  # convert percent to fraction
+
+                if '----   ----   -------   -------' in line:
+                    ready_to_acquire_composition = True
+
+        return out_dict
+
 
 class RangeTable(LayeredTarget):
     def __init__(self, filename):
