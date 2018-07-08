@@ -392,6 +392,8 @@ if __name__ == "__main__":
     print 'range for {} MeV ion: {} +/- {} microns'.format(ion_energy*1e-6, stopping_table.range_from_energy(ion_energy)*1e-4, stopping_table.straggling_from_energy(ion_energy)*1e-4)
     print 'some information on target from', damage_table.filename
     pprint(damage_table.target_info)
+    print 'some information on target from', stopping_table.filename
+    pprint(stopping_table.target_info)
 
     # plot it up
     fig, ax = plt.subplots(ncols=2, nrows=2, figsize=(12, 8))
