@@ -77,17 +77,14 @@ class LayeredTarget(SRIMTable):
                         return ' '.join(map(str, fields[i + num_fields:i + num_fields + num_to_return]))
             return
 
+        # get ready to capture some info
+        out_dict = {}
+        kp_mode = False
+
+        # loop over lines of file
         with open(self.filename, 'r') as f:
-            out_dict = {}
-            ions = 0.0
             for rawline in f.readlines():
                 line = rawline.strip()
-
-                # we are done if we found the ions and hit another section break
-                if '========' and ions > 0.0:
-                    # need out finish up last layer
-                    out_dict[layer_name] = {'width': width, 'atom_density': atom_density}
-                    return out_dict
 
                 # look for ion info
                 if re.match('Ion.*Energy', line):
@@ -100,7 +97,7 @@ class LayeredTarget(SRIMTable):
                     out_dict['ion_energy'] = energy
 
                 # look for layer info
-                if line.startswith('Layer'):
+                elif line.startswith('Layer'):
                     fields = line.split()
                     # check for new layer and start a new dict for this layer
                     if fields[1].isdigit():
@@ -119,10 +116,22 @@ class LayeredTarget(SRIMTable):
                         # layer density is 1 field before units
                         atom_density = float(fields_past(line, 'atoms/cm3', -1))
 
-                # get total number of ions ran
-                if 'Total Ions calculated' in line:
+                # look for 'Kinchin-Pease' mode
+                if 'Kinchin-Pease' in line:
+                    kp_mode = True
+
+                # get total number of ions ran, and we're done
+                elif 'Total Ions calculated' in line:
                     ions = float(line.split()[-1][1:])  # get rid of equals sign
                     out_dict['ions'] = ions
+
+                    # save a few more things before finishing
+                    out_dict[layer_name] = {'width': width, 'atom_density': atom_density}
+                    out_dict['kp_mode'] = kp_mode
+
+                    return out_dict
+
+
 
 
 class StoppingTable(SingleTarget):
