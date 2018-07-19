@@ -80,6 +80,8 @@ class LayeredTarget(SRIMTable):
         # get ready to capture some info
         out_dict = {}
         kp_mode = False
+        layer_name_list = []
+        element_set = set()
 
         # loop over lines of file
         with open(self.filename, 'r') as f:
@@ -104,9 +106,13 @@ class LayeredTarget(SRIMTable):
                         layer_num = int(fields[1])
                         # but first make a new dict of the old layer
                         if layer_num > 1:
-                            out_dict[layer_name] = {'width': width, 'atom_density': atom_density}
+                            out_dict[layer_name] = {'width': width, 'atom_density': atom_density, 'elements': layer_elements, 'stoich': layer_stoich}
                         # get the name of the layer
                         layer_name = fields_past(line, ':', 1, return_remaining=True)
+                        layer_name_list.append(layer_name)
+                        # initialize layer composition
+                        layer_elements = []
+                        layer_stoich = []
                     # check for line width, and density, which sometimes appear on the same line, but sometimes not,
                     # so can't hardcode field numbers
                     if 'Width' in line:
@@ -115,6 +121,13 @@ class LayeredTarget(SRIMTable):
                     if 'Density' in line:
                         # layer density is 1 field before units
                         atom_density = float(fields_past(line, 'atoms/cm3', -1))
+                    if 'Atomic Percent' in line:
+                        # get layer composition
+                        element = fields[3]
+                        stoich = float(fields[5])/100.0  # convert to fraction
+                        layer_elements.append(element)
+                        layer_stoich.append(stoich)
+                        element_set.add(element)  # add to global list
 
                 # look for 'Kinchin-Pease' mode
                 if 'Kinchin-Pease' in line:
@@ -125,13 +138,17 @@ class LayeredTarget(SRIMTable):
                     ions = float(line.split()[-1][1:])  # get rid of equals sign
                     out_dict['ions'] = ions
 
-                    # save a few more things before finishing
-                    out_dict[layer_name] = {'width': width, 'atom_density': atom_density}
+                elif 'Total Target Vacancies' in line:
+                    out_dict['total_vacancies'] = int(line.split()[-2])
+
+                elif 'Units are' in line:
+                    # we are done, so save a few more things before finishing
+                    out_dict[layer_name] = {'width': width, 'atom_density': atom_density, 'elements': layer_elements, 'stoich': layer_stoich}
                     out_dict['kp_mode'] = kp_mode
+                    out_dict['elements'] = list(element_set)
+                    out_dict['layer_names'] = layer_name_list
 
                     return out_dict
-
-
 
 
 class StoppingTable(SingleTarget):
