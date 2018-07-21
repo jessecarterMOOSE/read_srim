@@ -48,15 +48,19 @@ class SRIMTable(object):
 
 class SingleTarget(SRIMTable):
     # class for handling data files with no layer information, e.g. StoppingTable
-    def __init__(self, filename, column_names, widths=None):
-        super(SingleTarget, self).__init__(filename, column_names, widths=widths)
+    def __init__(self, path_name, column_names, filename=None, widths=None):
+        if filename:
+            path_name = os.path.join(path_name, filename)
+        super(SingleTarget, self).__init__(path_name, column_names, widths=widths)
 
 
 class LayeredTarget(SRIMTable):
     # class for handling data files from SRIM runs where the target can contain many layers
-    def __init__(self, filename, column_names, widths=None):
+    def __init__(self, path_name, column_names, filename=None, widths=None):
+        if filename:
+            path_name = os.path.join(path_name, filename)
         self.which_dashed_line = 1  # data comes after second dashed line in output files
-        super(LayeredTarget, self).__init__(filename, column_names, widths=widths)
+        super(LayeredTarget, self).__init__(path_name, column_names, widths=widths)
 
     def get_target_info(self):
         # read through file and figure out target properties, including multiple layers
@@ -302,9 +306,9 @@ class StoppingTable(SingleTarget):
 
 
 class RangeTable(LayeredTarget):
-    def __init__(self, filename):
+    def __init__(self, path_name, filename='RANGE.txt'):
         column_names = ['depth', 'ions', 'recoils']
-        super(RangeTable, self).__init__(filename, column_names)
+        super(RangeTable, self).__init__(path_name, column_names, filename=filename)
 
         # set range as dataframe index
         self.raw_df.set_index('depth', inplace=True)
@@ -315,9 +319,9 @@ class RangeTable(LayeredTarget):
 
 
 class DamageTable(LayeredTarget):
-    def __init__(self, filename):
+    def __init__(self, path_name, filename='VACANCY.txt'):
         column_names = ['depth', 'vacancies_by_ions', 'vacancies_by_recoils']
-        super(DamageTable, self).__init__(filename, column_names)
+        super(DamageTable, self).__init__(path_name, column_names, filename=filename)
 
         # set range as dataframe index
         self.raw_df.set_index('depth', inplace=True)
@@ -342,36 +346,36 @@ class DamageTable(LayeredTarget):
 
 
 class RecoilTable(LayeredTarget):
-    def __init__(self, filename):
+    def __init__(self, path_name, filename='E2RECOIL.txt'):
         column_names = ['depth', 'energy_from_ions', 'energy_absorbed_by_recoils']
-        super(RecoilTable, self).__init__(filename, column_names)
+        super(RecoilTable, self).__init__(path_name, column_names, filename=filename)
 
         # set range as dataframe index
         self.raw_df.set_index('depth', inplace=True)
 
 
 class IonizationTable(LayeredTarget):
-    def __init__(self, filename):
+    def __init__(self, path_name, filename='IONIZ.txt'):
         column_names = ['depth', 'ionization_by_ions', 'ionization_by_recoils']
-        super(IonizationTable, self).__init__(filename, column_names)
+        super(IonizationTable, self).__init__(path_name, column_names, filename=filename)
 
         # set range as dataframe index
         self.raw_df.set_index('depth', inplace=True)
 
 
 class PhononTable(LayeredTarget):
-    def __init__(self, filename):
+    def __init__(self, path_name, filename='PHONON.txt'):
         column_names = ['depth', 'phonons_by_ions', ' phonons_by_recoils']
-        super(PhononTable, self).__init__(filename, column_names)
+        super(PhononTable, self).__init__(path_name, column_names, filename=filename)
 
         # set range as dataframe index
         self.raw_df.set_index('depth', inplace=True)
 
 
 class CollisionTable(SingleTarget):
-    def __init__(self, filename):
+    def __init__(self, path_name, filename='COLLISON.txt'):
         column_names = ['ion_number', 'ion_energy', 'x', 'y', 'z', 'elec_stopping', 'target_atom', 'recoil_energy', 'displacements']
-        super(CollisionTable, self).__init__(filename, column_names)
+        super(CollisionTable, self).__init__(path_name, column_names, filename=filename)
 
     def parse_srim_file(self):
         with open(self.filename, 'r') as f:
@@ -393,7 +397,6 @@ class CollisionTable(SingleTarget):
         pass
 
 
-
 if __name__ == "__main__":
     import os.path
     import matplotlib.pyplot as plt
@@ -402,13 +405,14 @@ if __name__ == "__main__":
     ion_energy = 3e6  # 3 MeV
 
     # read in srim file
-    damage_table = DamageTable(os.path.join('data', str(int(ion_energy*1e-6))+'MeV-H-in-Fe-KP-40eV', 'VACANCY.txt'))
-    range_table = RangeTable(os.path.join('data', str(int(ion_energy*1e-6))+'MeV-H-in-Fe-KP-40eV', 'RANGE.txt'))
-    ionization_table = IonizationTable(os.path.join('data', str(int(ion_energy*1e-6))+'MeV-H-in-Fe-KP-40eV', 'IONIZ.txt'))
-    phonon_table = PhononTable(os.path.join('data', str(int(ion_energy*1e-6))+'MeV-H-in-Fe-KP-40eV', 'PHONON.txt'))
-    recoil_table = RecoilTable(os.path.join('data', '78.7keV-Fe-in-Fe-KP-40eV', 'E2RECOIL.txt'))
+    dirname = os.path.join('data', str(int(ion_energy*1e-6))+'MeV-H-in-Fe-KP-40eV')
+    damage_table = DamageTable(dirname)
+    range_table = RangeTable(dirname)
+    ionization_table = IonizationTable(dirname)
+    phonon_table = PhononTable(dirname)
+    recoil_table = RecoilTable(dirname)
     stopping_table = StoppingTable(os.path.join('data', 'Hydrogen in Iron.txt'))
-    collision_table = CollisionTable(os.path.join('data', str(int(ion_energy * 1e-6)) + 'MeV-H-in-Fe-KP-40eV', 'with-collision-data', 'COLLISON.txt'))
+    collision_table = CollisionTable(os.path.join(dirname, 'with-collision-data'), filename='COLLISON-truncated.txt')
 
     # print some basic info
     print 'range for {} MeV ion: {} +/- {} microns'.format(ion_energy*1e-6, stopping_table.range_from_energy(ion_energy)*1e-4, stopping_table.straggling_from_energy(ion_energy)*1e-4)
