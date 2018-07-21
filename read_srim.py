@@ -2,20 +2,19 @@ from StringIO import StringIO
 import pandas as pd
 import numpy as np
 from scipy.interpolate import interp1d
-import re
 
 
 class SRIMTable(object):
-    def __init__(self, filename, header_keywords, column_names, widths=None):
+    def __init__(self, filename, column_names, widths=None):
         # store filename as a member variable
         self.filename = filename
 
-        # store target information in a dict member variable
+        # store target information in a dict member variable, classes can overwrite this
         self.target_info = self.get_target_info()
 
         # generate file-like object to pass to pandas
         file_io = StringIO()
-        for line in self.parse_srim_file(filename, header_keywords):
+        for line in self.parse_srim_file():  # classes can overwrite this
             file_io.write(line)
         file_io.seek(0)  # rewind
 
@@ -27,41 +26,37 @@ class SRIMTable(object):
     def get_srim_table(self):
         return self.raw_df
 
-    @staticmethod
-    def parse_srim_file(filename, header_keywords):
-        found_headers = False
-        yielded = False
-        with open(filename, 'r') as f:
-            for line in f:
-                if yielded and len(line.strip()) > 0 and not line.lstrip()[0].isdigit():
-                    break
-                elif yielded and len(line.strip()) > 0 and line.lstrip()[0].isdigit():
-                    yield line
-                elif found_headers and len(line.strip()) > 0 and line.lstrip()[0].isdigit():
-                    yielded = True
-                    yield line
-                num_headers_found = 0
-                if not found_headers:
-                    for header in header_keywords:
-                        if header in line:
-                            num_headers_found += 1
-                    if num_headers_found == len(header_keywords):
-                        found_headers = True
+    def parse_srim_file(self):
+        dashed_lines_found = 0
+        with open(self.filename, 'r') as f:
+            ready_to_yield = False
+            for raw_line in f:
+                line = raw_line.strip()
+                if ready_to_yield:
+                    # look for lines starting with numbers
+                    if line[:1].isdigit():  # deals with empty strings
+                        yield raw_line  # pandas is expecting newlines in "file"
+                    else:
+                        # we are done
+                        break
+                elif set(line) == set(['-', ' ']):
+                    dashed_lines_found += 1
+                    # look for the broken dashed line to signal data is coming
+                    if dashed_lines_found == self.which_dashed_line:
+                        ready_to_yield = True
 
 
 class SingleTarget(SRIMTable):
     # class for handling data files with no layer information, e.g. StoppingTable
-    def __init__(self, filename, header_keywords, column_names, widths=None):
-        super(SingleTarget, self).__init__(filename, header_keywords, column_names, widths=widths)
-
-    def get_target_info(self):
-        pass
+    def __init__(self, filename, column_names, widths=None):
+        super(SingleTarget, self).__init__(filename, column_names, widths=widths)
 
 
 class LayeredTarget(SRIMTable):
     # class for handling data files from SRIM runs where the target can contain many layers
-    def __init__(self, filename, header_keywords, column_names, widths=None):
-        super(LayeredTarget, self).__init__(filename, header_keywords, column_names, widths=widths)
+    def __init__(self, filename, column_names, widths=None):
+        self.which_dashed_line = 1  # data comes after second dashed line in output files
+        super(LayeredTarget, self).__init__(filename, column_names, widths=widths)
 
     def get_target_info(self):
         # read through file and figure out target properties, including multiple layers
@@ -87,78 +82,79 @@ class LayeredTarget(SRIMTable):
         with open(self.filename, 'r') as f:
             for rawline in f.readlines():
                 line = rawline.strip()
+                fields = line.split()
 
-                # look for ion info
-                if re.match('Ion.*Energy', line):
-                    # ion and energy always in the format 'Ion = <element> Energy = <energy> keV'
-                    fields = line.split()
-                    ion = fields[2]
-                    energy = float(fields[-2])
-                    energy *= 1e3  # energy in file is in keV
-                    out_dict['ion'] = ion
-                    out_dict['ion_energy'] = energy
+                # if we found something, try to parse it
+                if fields:
+                    # look for ion info
+                    if fields[0] == 'Ion' and fields[-1] == 'keV':
+                        # ion and energy always in the format 'Ion = <element> Energy = <energy> keV'
+                        ion = fields[2]
+                        energy = float(fields[-2])
+                        energy *= 1e3  # energy in file is in keV
+                        out_dict['ion'] = ion
+                        out_dict['ion_energy'] = energy
 
-                # look for layer info
-                elif line.startswith('Layer'):
-                    fields = line.split()
-                    # check for new layer and start a new dict for this layer
-                    if fields[1].isdigit():
-                        layer_num = int(fields[1])
-                        # but first make a new dict of the old layer
-                        if layer_num > 1:
-                            out_dict[layer_name] = {'width': width, 'atom_density': atom_density, 'elements': layer_elements, 'stoich': layer_stoich}
-                        # get the name of the layer
-                        layer_name = fields_past(line, ':', 1, return_remaining=True)
-                        layer_name_list.append(layer_name)
-                        # initialize layer composition
-                        layer_elements = []
-                        layer_stoich = []
-                    # check for line width, and density, which sometimes appear on the same line, but sometimes not,
-                    # so can't hardcode field numbers
-                    if 'Width' in line:
-                        # layer width is 2 fields past 'Width'
-                        width = float(fields_past(line, 'Width', 2))
-                    if 'Density' in line:
-                        # layer density is 1 field before units
-                        atom_density = float(fields_past(line, 'atoms/cm3', -1))
-                    if 'Atomic Percent' in line:
-                        # get layer composition
-                        element = fields[3]
-                        stoich = float(fields[5])/100.0  # convert to fraction
-                        layer_elements.append(element)
-                        layer_stoich.append(stoich)
-                        element_set.add(element)  # add to global list
+                    # look for layer info
+                    elif line.startswith('Layer'):
+                        # check for new layer and start a new dict for this layer
+                        if fields[1].isdigit():
+                            layer_num = int(fields[1])
+                            # but first make a new dict of the old layer
+                            if layer_num > 1:
+                                out_dict[layer_name] = {'width': width, 'atom_density': atom_density, 'elements': layer_elements, 'stoich': layer_stoich}
+                            # get the name of the layer
+                            layer_name = fields_past(line, ':', 1, return_remaining=True)
+                            layer_name_list.append(layer_name)
+                            # initialize layer composition
+                            layer_elements = []
+                            layer_stoich = []
+                        # check for line width, and density, which sometimes appear on the same line, but sometimes not,
+                        # so can't hardcode field numbers
+                        if 'Width' in line:
+                            # layer width is 2 fields past 'Width'
+                            width = float(fields_past(line, 'Width', 2))
+                        if 'Density' in line:
+                            # layer density is 1 field before units
+                            atom_density = float(fields_past(line, 'atoms/cm3', -1))
+                        if 'Atomic Percent' in line:
+                            # get layer composition
+                            element = fields[3]
+                            stoich = float(fields[5])/100.0  # convert to fraction
+                            layer_elements.append(element)
+                            layer_stoich.append(stoich)
+                            element_set.add(element)  # add to global list
 
-                # look for 'Kinchin-Pease' mode
-                if 'Kinchin-Pease' in line:
-                    kp_mode = True
+                    # look for 'Kinchin-Pease' mode
+                    if 'Kinchin-Pease' in line:
+                        kp_mode = True
 
-                # get total number of ions ran, and we're done
-                elif 'Total Ions calculated' in line:
-                    ions = float(line.split()[-1][1:])  # get rid of equals sign
-                    out_dict['ions'] = ions
+                    # get total number of ions ran, and we're done
+                    elif 'Total Ions calculated' in line:
+                        ions = float(fields[-1][1:])  # get rid of equals sign
+                        out_dict['ions'] = ions
 
-                elif 'Total Target Vacancies' in line:
-                    out_dict['total_vacancies'] = int(line.split()[-2])
+                    elif 'Total Target Vacancies' in line:
+                        out_dict['total_vacancies'] = int(fields[-2])
 
-                elif 'Units are' in line:
-                    # we are done, so save a few more things before finishing
-                    out_dict[layer_name] = {'width': width, 'atom_density': atom_density, 'elements': layer_elements, 'stoich': layer_stoich}
-                    out_dict['kp_mode'] = kp_mode
-                    out_dict['elements'] = list(element_set)
-                    out_dict['layer_names'] = layer_name_list
+                    elif 'Units are' in line:
+                        # we are done, so save a few more things before finishing
+                        out_dict[layer_name] = {'width': width, 'atom_density': atom_density, 'elements': layer_elements, 'stoich': layer_stoich}
+                        out_dict['kp_mode'] = kp_mode
+                        out_dict['elements'] = list(element_set)
+                        out_dict['layer_names'] = layer_name_list
 
-                    return out_dict
+                        return out_dict
 
 
 class StoppingTable(SingleTarget):
     def __init__(self, filename):
-        header_keywords = ['Energy', 'Elec', 'Nuclear', 'Range', 'Straggling']
         column_names = ['energy', 'energy_units', 'electronic_stopping', 'nuclear_stopping', 'range', 'range_units',
                         'longitudinal_straggling', 'longitudinal_straggling_units',
                         'lateral_straggling', 'lateral_straggling_units']
         widths = [7, 4, 13, 11, 8, 3, 9, 3, 9, 3]
-        super(StoppingTable, self).__init__(filename, header_keywords, column_names, widths=widths)
+        self.which_dashed_line = 2  # data comes after second dashed line
+        super(StoppingTable, self).__init__(filename, column_names, widths=widths)
 
         # convert all values to either Angstroms or eV
         def convert_to_eV(row):
@@ -307,9 +303,8 @@ class StoppingTable(SingleTarget):
 
 class RangeTable(LayeredTarget):
     def __init__(self, filename):
-        header_keywords = ['DEPTH', 'Recoil']
         column_names = ['depth', 'ions', 'recoils']
-        super(RangeTable, self).__init__(filename, header_keywords, column_names)
+        super(RangeTable, self).__init__(filename, column_names)
 
         # set range as dataframe index
         self.raw_df.set_index('depth', inplace=True)
@@ -321,9 +316,8 @@ class RangeTable(LayeredTarget):
 
 class DamageTable(LayeredTarget):
     def __init__(self, filename):
-        header_keywords = ['TARGET', 'VACANCIES', 'VACANCIES']
         column_names = ['depth', 'vacancies_by_ions', 'vacancies_by_recoils']
-        super(DamageTable, self).__init__(filename, header_keywords, column_names)
+        super(DamageTable, self).__init__(filename, column_names)
 
         # set range as dataframe index
         self.raw_df.set_index('depth', inplace=True)
@@ -349,9 +343,8 @@ class DamageTable(LayeredTarget):
 
 class RecoilTable(LayeredTarget):
     def __init__(self, filename):
-        header_keywords = ['DEPTH', 'from', 'Absorbed']
         column_names = ['depth', 'energy_from_ions', 'energy_absorbed_by_recoils']
-        super(RecoilTable, self).__init__(filename, header_keywords, column_names)
+        super(RecoilTable, self).__init__(filename, column_names)
 
         # set range as dataframe index
         self.raw_df.set_index('depth', inplace=True)
@@ -359,9 +352,8 @@ class RecoilTable(LayeredTarget):
 
 class IonizationTable(LayeredTarget):
     def __init__(self, filename):
-        header_keywords = ['TARGET', 'IONIZ.']
         column_names = ['depth', 'ionization_by_ions', 'ionization_by_recoils']
-        super(IonizationTable, self).__init__(filename, header_keywords, column_names)
+        super(IonizationTable, self).__init__(filename, column_names)
 
         # set range as dataframe index
         self.raw_df.set_index('depth', inplace=True)
@@ -369,9 +361,8 @@ class IonizationTable(LayeredTarget):
 
 class PhononTable(LayeredTarget):
     def __init__(self, filename):
-        header_keywords = ['DEPTH', 'PHONONS']
         column_names = ['depth', 'phonons_by_ions', ' phonons_by_recoils']
-        super(PhononTable, self).__init__(filename, header_keywords, column_names)
+        super(PhononTable, self).__init__(filename, column_names)
 
         # set range as dataframe index
         self.raw_df.set_index('depth', inplace=True)
@@ -380,10 +371,10 @@ class PhononTable(LayeredTarget):
 class CollisionTable(SingleTarget):
     def __init__(self, filename):
         column_names = ['ion_number', 'ion_energy', 'x', 'y', 'z', 'elec_stopping', 'target_atom', 'recoil_energy', 'displacements']
-        super(CollisionTable, self).__init__(filename, None, column_names)
+        super(CollisionTable, self).__init__(filename, column_names)
 
-    def parse_srim_file(self, filename, header_keywords):
-        with open(filename, 'r') as f:
+    def parse_srim_file(self):
+        with open(self.filename, 'r') as f:
             for line in f:
                 # lines of data have weird superscript 3's as delimiter, and also start with one,
                 # so we need to split on that character but also remove empty fields
@@ -396,6 +387,11 @@ class CollisionTable(SingleTarget):
                         fields[0] = str(int(fields[0]))
                         fields[1] = str(float(fields[1])*1e3)
                         yield ' '.join(map(str, fields))+'\n'
+
+    def get_target_info(self):
+        # not implemented yet
+        pass
+
 
 
 if __name__ == "__main__":
