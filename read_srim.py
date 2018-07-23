@@ -280,7 +280,7 @@ class StoppingTable(SingleTarget):
                 fields = line.split()
 
                 # we are done if we hit this line and already read in composition
-                if ready_to_acquire_composition and '===============' in line:
+                if ready_to_acquire_composition and set(line) == set(['=']):
                     # store composition
                     out_dict['elements'] = element_list
                     out_dict['atom_fractions'] = atom_fraction_list
@@ -299,7 +299,7 @@ class StoppingTable(SingleTarget):
                     element_list.append(fields[0])
                     atom_fraction_list.append(float(fields[2])/100.0)  # convert percent to fraction
 
-                if '----   ----   -------   -------' in line:
+                if set(line) == set(['-', ' ']):
                     ready_to_acquire_composition = True
 
         return out_dict
