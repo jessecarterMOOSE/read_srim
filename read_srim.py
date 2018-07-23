@@ -250,10 +250,9 @@ class StoppingTable(SingleTarget):
         energy = self.energy_from_depth(depth, initial_energy)
         return self.estimated_damage_from_energy(energy, displacement_energy, factor)
 
-    def estimated_damage_curve(self, initial_energy, displacement_energy=40.0, factor=0.5, trim=False):
-        ion_range = self.range_from_energy(initial_energy)
-        depths = np.linspace(0, ion_range, num=1000)
-        curve = pd.Series(data=self.estimated_damage_from_depth(depths, initial_energy, displacement_energy, factor), index=depths)
+    def estimated_damage_curve(self, initial_energy, displacement_energy=40.0, factor=0.5, trim=False, num=1000):
+        energy_profile = self.energy_profile(initial_energy, num=num)
+        curve = pd.Series(data=self.estimated_damage_from_energy(energy_profile.values, displacement_energy, factor), index=energy_profile.index)
         if trim:
             # trim past the peak value
             mask = curve.index < curve.idxmax()
