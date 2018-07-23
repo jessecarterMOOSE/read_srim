@@ -2,6 +2,7 @@ from StringIO import StringIO
 import pandas as pd
 import numpy as np
 from scipy.interpolate import interp1d
+import os.path
 
 
 class SRIMTable(object):
@@ -421,7 +422,6 @@ class CollisionTable(SingleTarget):
 
 
 if __name__ == "__main__":
-    import os.path
     import matplotlib.pyplot as plt
     from pprint import pprint
 
