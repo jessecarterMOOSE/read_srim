@@ -393,8 +393,32 @@ class CollisionTable(SingleTarget):
                         yield ' '.join(map(str, fields))+'\n'
 
     def get_target_info(self):
-        # not implemented yet
-        pass
+        out_dict = {}
+        element_list = []
+        displacement_energy_list = []
+        binding_energy_list = []
+        kp_mode = False
+        with open(self.filename) as f:
+            for line in f:
+                fields = line.strip().split()
+                if 'Ion Name' in line:
+                    out_dict['ion'] = fields[-2]
+                elif 'Ion Energy' in line:
+                    out_dict['ion_energy'] = float(fields[-3][1:])*1e3  # convert to eV
+                elif 'Displacement Energy' in line:
+                    displacement_energy_list.append(float(fields[-2]))
+                    element_list.append(fields[-4])
+                elif 'Latt.Binding Energy' in line:
+                    binding_energy_list.append(float(fields[-2]))
+                elif 'Kinchin-Pease Theory' in line:
+                    kp_mode = True
+                elif 'COLLISION HISTORY' in line:
+                    out_dict['kp_mode'] = kp_mode
+                    out_dict['elements'] = element_list
+                    out_dict['displacement_energies'] = displacement_energy_list
+                    out_dict['binding_energies'] = binding_energy_list
+
+                    return out_dict
 
 
 if __name__ == "__main__":
@@ -416,10 +440,16 @@ if __name__ == "__main__":
 
     # print some basic info
     print 'range for {} MeV ion: {} +/- {} microns'.format(ion_energy*1e-6, stopping_table.range_from_energy(ion_energy)*1e-4, stopping_table.straggling_from_energy(ion_energy)*1e-4)
+    print
     print 'some information on target from', damage_table.filename
     pprint(damage_table.target_info)
+    print
     print 'some information on target from', stopping_table.filename
     pprint(stopping_table.target_info)
+    print
+    print 'some information on target from', collision_table.filename
+    pprint(collision_table.get_target_info())
+    print
 
     # plot it up
     fig, ax = plt.subplots(ncols=2, nrows=2, figsize=(12, 8))
