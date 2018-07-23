@@ -247,7 +247,11 @@ class StoppingTable(SingleTarget):
     def estimated_damage_from_energy(self, energy, displacement_energy=40.0, factor=0.5):
         return (0.8/2.0/displacement_energy)*self.nuclear_stopping_from_energy(energy) * factor
 
-    def estimated_damage_from_depth(self, depth, initial_energy, displacement_energy=40.0, factor=0.5):
+    def estimated_damage_from_depth(self, depth, initial_energy, displacement_energy=40.0, factor=0.5, normalize_depth=False):
+        if normalize_depth:
+            # normalize depth argument to ion's range
+            ion_range = self.range_from_energy(initial_energy)
+            depth = ion_range*depth
         energy = self.energy_from_depth(depth, initial_energy)
         return self.estimated_damage_from_energy(energy, displacement_energy, factor)
 
