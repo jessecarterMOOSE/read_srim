@@ -215,17 +215,23 @@ class StoppingTable(SingleTarget):
         ranges.loc[0.0] = 0.0  # put this back in
         self.ranges = ranges.sort_index()
 
+    def check_float(self, value):
+        # if numpy array holds only a single value, convert to float
+        if type(value) == np.ndarray and value.size == 1:
+            return float(value)
+        return value
+
     def range_from_energy(self, energy):
-        return self.range_interp(energy)
+        return self.check_float(self.range_interp(energy))
 
     def straggling_from_energy(self, energy):
-        return self.straggling_interp(energy)
+        return self.check_float(self.straggling_interp(energy))
 
     def nuclear_stopping_from_energy(self, energy):
-        return self.nuclear_stopping_interp(energy)
+        return self.check_float(self.nuclear_stopping_interp(energy))
 
     def electronic_stopping_from_energy(self, energy):
-        return self.elec_stopping_interp(energy)
+        return self.check_float(self.elec_stopping_interp(energy))
 
     def energy_from_depth(self, depth, initial_energy):
         # find reference depth, which is the range of the initial ion
@@ -242,10 +248,10 @@ class StoppingTable(SingleTarget):
         energy_vs_depth = pd.Series(depths.index.values, index=depths.values).sort_index()
 
         # now we can interpolate
-        return interp1d(energy_vs_depth.index.values, energy_vs_depth.values, bounds_error=False, fill_value=(initial_energy, 0.0))(depth)
+        return self.check_float(interp1d(energy_vs_depth.index.values, energy_vs_depth.values, bounds_error=False, fill_value=(initial_energy, 0.0))(depth))
 
     def estimated_damage_from_energy(self, energy, displacement_energy=40.0, factor=0.5):
-        return (0.8/2.0/displacement_energy)*self.nuclear_stopping_from_energy(energy) * factor
+        return self.check_float((0.8/2.0/displacement_energy)*self.nuclear_stopping_from_energy(energy) * factor)
 
     def estimated_damage_from_depth(self, depth, initial_energy, displacement_energy=40.0, factor=0.5, normalize_depth=False):
         if normalize_depth:
@@ -253,7 +259,7 @@ class StoppingTable(SingleTarget):
             ion_range = self.range_from_energy(initial_energy)
             depth = ion_range*depth
         energy = self.energy_from_depth(depth, initial_energy)
-        return self.estimated_damage_from_energy(energy, displacement_energy, factor)
+        return self.check_float(self.estimated_damage_from_energy(energy, displacement_energy, factor))
 
     def estimated_damage_curve(self, initial_energy, displacement_energy=40.0, factor=0.5, trim=False, num=1000):
         energy_profile = self.energy_profile(initial_energy, num=num)
