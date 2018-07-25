@@ -63,6 +63,13 @@ class LayeredTarget(SRIMTable):
         self.which_dashed_line = 1  # data comes after second dashed line in output files
         super(LayeredTarget, self).__init__(path_name, column_names, widths=widths)
 
+    def get_density(self, layer_num=0, layer_name=None):
+        target_info = self.get_target_info()
+        if layer_name is not None:
+            return target_info[layer_name]['atom_density']
+        else:
+            return target_info[target_info['layer_names'][layer_num]]['atom_density']
+
     def get_target_info(self):
         # read through file and figure out target properties, including multiple layers
         def fields_past(line, search_string, num_fields, num_to_return=1, return_remaining=False):
@@ -275,6 +282,9 @@ class StoppingTable(SingleTarget):
         depths = np.linspace(0, ion_range, num=num)
         energies = self.energy_from_depth(depths, initial_energy)
         return pd.Series(data=energies, index=depths)
+
+    def get_density(self):
+        return self.get_target_info()['atom_density']
 
     def get_target_info(self):
         # get ready to capture some info
