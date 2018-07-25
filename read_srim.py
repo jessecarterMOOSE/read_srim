@@ -286,6 +286,11 @@ class StoppingTable(SingleTarget):
     def get_density(self):
         return self.get_target_info()['atom_density']
 
+    def fluence_per_dpa_at_depth(self, depth, initial_energy, displacement_energy=40.0, factor=0.5, normalize_depth=False):
+        # returns the fluence needed for 1 dpa in units of ions/cm^2
+        damage = self.estimated_damage_from_depth(depth, initial_energy, displacement_energy=displacement_energy, factor=factor, normalize_depth=normalize_depth)
+        return self.get_density()/damage*1e-8  # need to convert Angstroms in damage value to centimeters
+
     def get_target_info(self):
         # get ready to capture some info
         out_dict = {}
