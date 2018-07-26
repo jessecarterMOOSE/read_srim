@@ -24,6 +24,12 @@ class SRIMTable(object):
         else:
             self.raw_df = pd.read_csv(file_io, delim_whitespace=True, header=None, names=column_names)
 
+    @staticmethod
+    def fluence_per_dpa(damage, density):
+        # dpa = 1e8*damage*fluence/density, so fluence/dpa = density/damage*1e-8
+        # the 1e8 factor converts Angstroms to cm
+        return density/damage*1e-8
+
     def get_srim_table(self):
         return self.raw_df
 
@@ -286,10 +292,10 @@ class StoppingTable(SingleTarget):
     def get_density(self):
         return self.get_target_info()['atom_density']
 
-    def fluence_per_dpa_at_depth(self, depth, initial_energy, displacement_energy=40.0, factor=0.5, normalize_depth=False):
+    def estimated_fluence_per_dpa_at_depth(self, depth, initial_energy, displacement_energy=40.0, factor=0.5, normalize_depth=False):
         # returns the fluence needed for 1 dpa in units of ions/cm^2
         damage = self.estimated_damage_from_depth(depth, initial_energy, displacement_energy=displacement_energy, factor=factor, normalize_depth=normalize_depth)
-        return self.get_density()/damage*1e-8  # need to convert Angstroms in damage value to centimeters
+        return self.fluence_per_dpa(damage, self.get_density())
 
     def get_target_info(self):
         # get ready to capture some info
@@ -368,6 +374,17 @@ class DamageTable(LayeredTarget):
 
     def get_total_damage_profile(self):
         return self.raw_df['total_vacancies']
+
+    def damage_at_depth(self, depth, nearby_bins=2):
+        # find the damage at given depth by finding the bin containing the input depth,
+        # and then average with nearby bins
+        damage = self.get_total_damage_profile()
+        last_bin = damage.loc[:depth].size
+        slice = damage.iloc[last_bin-nearby_bins:last_bin+nearby_bins+1]
+        return slice.mean()
+
+    def fluence_per_dpa_at_depth(self, depth, nearby_bins=2, layer_num=0, layer_name=None):
+        return self.fluence_per_dpa(self.damage_at_depth(depth, nearby_bins=nearby_bins), self.get_density(layer_num=layer_num, layer_name=layer_name))
 
 
 class RecoilTable(LayeredTarget):
@@ -464,6 +481,10 @@ if __name__ == "__main__":
 
     # print some basic info
     print 'range for {} MeV ion: {} +/- {} microns'.format(ion_energy*1e-6, stopping_table.range_from_energy(ion_energy)*1e-4, stopping_table.straggling_from_energy(ion_energy)*1e-4)
+    print
+    print 'fluence to 1 dpa at 60% of range:'
+    print 'from Damage output: {:.2e}'.format(damage_table.fluence_per_dpa_at_depth(0.6*stopping_table.range_from_energy(ion_energy)))
+    print 'estimated from Stopping Table: {:.2e}'.format(stopping_table.estimated_fluence_per_dpa_at_depth(0.6, ion_energy, normalize_depth=True))
     print
     print 'some information on target from', damage_table.filename
     pprint(damage_table.target_info)
