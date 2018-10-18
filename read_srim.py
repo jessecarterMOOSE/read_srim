@@ -246,22 +246,33 @@ class StoppingTable(SingleTarget):
     def electronic_stopping_from_energy(self, energy):
         return self.check_float(self.elec_stopping_interp(energy))
 
-    def energy_from_depth(self, depth, initial_energy):
+    def depth_from_energy_series(self, initial_energy):
+        # creates series of depths indexed by energy
+
         # find reference depth, which is the range of the initial ion
         reference_depth = self.range_from_energy(initial_energy)
 
         # subtract ranges from reference depth and keep only positive values
-        depths = reference_depth - self.ranges[reference_depth-self.ranges >= 0.0]
+        depths_series = reference_depth - self.ranges[reference_depth - self.ranges >= 0.0]
 
         # insert initial_energy if it is not already in there, which will be the case if we are interpolating energy
-        if initial_energy not in depths.index:
-            depths[initial_energy] = 0.0  # depth with be zero when ion enters slab
+        if initial_energy not in depths_series.index:
+            depths_series[initial_energy] = 0.0  # depth with be zero when ion enters slab
 
-        # this gives us depth indexed by energy, so we need to swap it, then sort it
-        energy_vs_depth = pd.Series(depths.index.values, index=depths.values).sort_index()
+        return depths_series
 
-        # now we can interpolate
-        return self.check_float(interp1d(energy_vs_depth.index.values, energy_vs_depth.values, bounds_error=False, fill_value=(initial_energy, 0.0))(depth))
+    def depth_from_energy(self, energy, initial_energy):
+        # get depth series and interpolate it
+        depths = self.depth_from_energy_series(initial_energy)
+
+        return self.check_float(interp1d(depths.index.values, depths.values)(energy))
+
+    def energy_from_depth(self, depth, initial_energy):
+        # get depth series
+        depths = self.depth_from_energy_series(initial_energy)
+
+        # interpolate but switch the order, allow extrapolation: initial energy before surface, 0 after range
+        return self.check_float(interp1d(depths.values, depths.index.values, bounds_error=False, fill_value=(initial_energy, 0.0))(depth))
 
     def estimated_damage_from_energy(self, energy, displacement_energy=40.0, factor=0.5):
         return self.check_float((0.8/2.0/displacement_energy)*self.nuclear_stopping_from_energy(energy) * factor)
