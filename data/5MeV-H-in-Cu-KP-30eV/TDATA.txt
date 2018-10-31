@@ -1,0 +1,39 @@
+====== pysrim run =======
+        SRIM-2013.00
+=======================================
+      Data  of  TRIM  Calculation      
+=======================================
+--------------------------------------------------------------------
+    Recoil/Damage Calculations made with Kinchin-Pease Estimates    
+--------------------------------------------------------------------
+Ion =  H ( 1)   Ion Mass= 001.0079
+Energy  = 5000000.E-03 keV
+Ion Angle to Surface = 0 degrees
+============= TARGET MATERIAL ======================================
+  Layer # 1 - None
+  Layer # 1 - Bottom Depth=     9.E+05 A
+  Layer # 1- Density = 8.491E22 atoms/cm3 = 8.96 g/cm3
+  Layer # 1- Cu = 100  Atomic Percent = 100  Mass Percent
+====================================================================
+Target energies for target atom = Cu
+    Displacement = 30 eV, Binding = 0 eV, Surface = 3 eV
+====================================================================
+Depth Range of Tabulated Data=  000000.E+00  -  884700.E+00  Angstroms
+====================================================================
+Total Ions calculated =  1000000
+Average Range         =   77740.E+01 Angstroms
+Average Straggling    =   24297.E+00 Angstroms
+Average Vacancy/Ion   =   33754.E-03
+====================================================================
+Total Backscattered Ions=  122 
+Total Transmitted Ions  =  0 
+====================================================================
+See files SRIM Outputs\*.txt for tables :
+   TDATA.txt    -- Details of the calculation.
+   RANGE.txt    -- Final distribution of Ions/Recoils
+   VACANCY.txt  -- Distribution of Vacancies
+   IONIZ.txt    -- Distribution of Ionization
+   PHONON.txt   -- Distribution of Phonons
+   E2RECOIL.txt -- Energy transferred to recoils
+   NOVAC.txt    -- Replacement collisions
+   LATERAL.txt  -- Lateral Spread of Ions
